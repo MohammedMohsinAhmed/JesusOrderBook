@@ -1,6 +1,11 @@
 #include <numeric>
 #include "Orderbook.h"
 
+
+// For market orders, we can match as long as the 
+// Total quantity of opposite side >= order quantity
+// Though theres no need for this check
+// Market orders can just stay in our orderbook
 bool Orderbook::CanMatch(Side side, Price price) const {
 	if (side == Side::Buy) {
 		if (asks_.empty())
@@ -16,6 +21,8 @@ bool Orderbook::CanMatch(Side side, Price price) const {
 	}
 }
 
+// A market order doesnt care about price
+// So bidprice < askPrice doesnt stop matching
 Trades Orderbook::MatchOrders() {
 	Trades trades;
 	trades.reserve(orders_.size());
@@ -37,7 +44,6 @@ Trades Orderbook::MatchOrders() {
 		if (bidPrice < askPrice)
 			break;
 
-		// todo: sort this size issue
 		while (bids_.size() && asks_.size()) {
 			auto bid = bids.front();
 			auto ask = asks.front();
@@ -96,6 +102,29 @@ Trades Orderbook::AddOrder(OrderPointer order) {
 	if (orders_.contains(order->GetOrderId()))
 		return { };
 
+	if (order->GetOrderType() == OrderType::Market) {
+		if (order->GetSide() == Side::Buy && !asks_.empty()) {
+			// A market order will fill at any price
+			// Then, in the worst case scenario, the highest ask order we can trade with is going to be 
+			// the worst ask
+			const auto& [worstAsk, _] = *asks_.rbegin();
+			order->ToGoodTillCancel(worstAsk);
+		}
+		else if (order->GetSide() == Side::Sell && !bids_.empty()) {
+			// Same for bids
+			const auto& [worstBid, _] = *bids_.rbegin();
+			order->ToGoodTillCancel(worstBid);
+		}
+		else
+			return { };
+		// In this way we effectively create a limit order 
+		// If the market ord quantity > opposite sides quantity
+		// Then we fill the order when an order somes in on the other side 
+		// Whos price can match with the new good till cancel
+		// Which is basically a limit order 
+
+	}
+
 	if (order->GetOrderType() == OrderType::FillAndKill && !CanMatch(order->GetSide(), order->GetPrice()))
 		return { };
 
@@ -151,7 +180,6 @@ Trades Orderbook::MatchOrder(OrderModify order) {
 	}
 
 	const auto& [existingOrder, _] = orders_.at(order.GetOrderId());
-	// TODO: CancelOrder has a bug
 	CancelOrder(order.GetOrderId());
 	return AddOrder(order.ToOrderPointer(existingOrder->GetOrderType()));
 }

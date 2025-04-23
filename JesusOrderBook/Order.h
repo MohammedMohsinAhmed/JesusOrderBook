@@ -4,6 +4,7 @@
 #include "Ints.h"
 #include "Side.h"
 #include "OrderType.h"
+#include "Constants.h"
 
 class Order {
 public:
@@ -14,8 +15,13 @@ public:
 		, price_{ price }
 		, initialQuantity_{ quantity }
 		, remainingQuantity_{ quantity }
-	{
-	}
+	{ }
+
+	Order(OrderId orderId, Side side, Quantity quantity)
+		: Order(OrderType::Market, orderId, side, Constants::InvalidPrice, quantity)
+	{ }
+
+
 
 	OrderId GetOrderId() const { return orderId_; }
 	Side GetSide() const { return side_; }
@@ -30,6 +36,10 @@ public:
 			throw std::logic_error(std::format("Order ({}) cannot be filled for more than its remaining quantity.", GetOrderId()));
 
 		remainingQuantity_ -= quantity;
+	}
+	void ToGoodTillCancel(Price price) {
+		orderType_ = OrderType::GoodTillCancel;
+		price_ = price;
 	}
 
 private:

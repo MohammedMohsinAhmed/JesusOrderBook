@@ -6,18 +6,13 @@ int main() {
 	OrderId orderId = 1;
 	OrderId orderIdTwo = 2;
 	OrderId orderIdThree = 3;
-	orderbook.AddOrder(std::make_shared<Order>(OrderType::GoodTillCancel, orderIdThree, Side::Buy, 50, 10));
-	orderbook.AddOrder(std::make_shared<Order>(OrderType::GoodTillCancel, orderId, Side::Buy, 100, 10));
-	orderbook.AddOrder(std::make_shared<Order>(OrderType::GoodTillCancel, orderIdTwo, Side::Sell, 90, 1));
-	orderbook.AddOrder(std::make_shared<Order>(OrderType::GoodTillCancel, 4, Side::Sell, 500, 1));
-	orderbook.AddOrder(std::make_shared<Order>(OrderType::GoodTillCancel, 5, Side::Sell, 400, 1));
+	OrderId orderIdFour = 4;
+	// TODO: Bug when attempting to fill a market order using orders at different price levels
+	// E.g trying to fill a 200 bid with 100 and 120 ask
+	orderbook.AddOrder(std::make_shared<Order>(OrderType::GoodTillCancel, orderIdTwo, Side::Sell, 100, 50));
+	orderbook.AddOrder(std::make_shared<Order>(orderId, Side::Buy, 100));
 	std::cout << orderbook.Size() << '\n';
-	OrderBookLevelInfos infos = orderbook.GetOrderInfos();
-	std::cout << infos.GetBids()[0].price_ << '\n';
-	std::cout << infos.GetBids()[0].quantity_ << '\n';
-	std::cout << infos.GetAsks()[0].price_ << '\n';
-	std::cout << infos.GetAsks()[0].quantity_ << '\n';
-	orderbook.CancelOrder(orderId);
+	orderbook.AddOrder(std::make_shared<Order>(OrderType::GoodTillCancel, orderIdThree, Side::Sell, 120, 60));
 	std::cout << orderbook.Size() << '\n';
 	std::cin.get();
 }
